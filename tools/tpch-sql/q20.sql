@@ -22,7 +22,7 @@ and ps_availqty > (
 select
 0.5 * sum(l_quantity)
 from
-lineitem
+lineitem,partsupp
 where
 l_partkey = ps_partkey
 and l_suppkey = ps_suppkey
