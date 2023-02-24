@@ -1,1 +1,1 @@
-615169e51a0527c393db81ae2ef4e243 *pg_seqscan3.5.3-bin-relaese.tar.gz
+b2f1292427abaf983cc548c67561e592  pg_seqscan3.5.2-bin-relaese.tar.gz
