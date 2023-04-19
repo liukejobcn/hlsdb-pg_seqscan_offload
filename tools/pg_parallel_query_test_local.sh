@@ -18,8 +18,8 @@ echo "start_pg_with_parallel_count parallel_cnt=$parallel_cnt"
 cd $working_dir
 
 sed -i "/max_worker_processes =/cmax_worker_processes = $parallel_cnt" $database/postgresql.conf
-sed -i "/max_parallel_workers_per_gather =/cmax_parallel_workers_per_gather = $max_parallel_cnt" $database/postgresql.conf
-sed -i "/max_parallel_workers =/cmax_parallel_workers = $max_parallel_cnt" $database/postgresql.conf
+sed -i "/max_parallel_workers_per_gather =/cmax_parallel_workers_per_gather = $parallel_cnt" $database/postgresql.conf
+sed -i "/max_parallel_workers =/cmax_parallel_workers = $parallel_cnt" $database/postgresql.conf
 sed -i "/min_parallel_table_scan_size =/cmin_parallel_table_scan_size = 8kB" $database/postgresql.conf
 
 pg_ctl -D $database restart
@@ -36,12 +36,13 @@ sql_dir=$4
 query_sql=$5
 test_time=$6
 
+cd $working_dir
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
 echo "pgbench -rf $sql_dir/$query_sql -T $test_time -n $database" 
 
-pgbench -rf $sql_dir/$query_sql -T $test_time -n $database &
+pgbench -rf $sql_dir/$query_sql -T $test_time -n $database > $p_cnt-$sql_name-parallel-pgbench.txt &
 
 }
 
@@ -54,6 +55,7 @@ sql_dir=$4
 query_sql=$5
 test_time=$6
 
+cd $working_dir
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
@@ -61,7 +63,8 @@ mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt
 
 }
 
-working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
+server_working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
+pgbench_working_dir=$(pwd)
 database=tpch1GB
 sql_dir=./tpch-sql
 mpstat_base_time=5
@@ -79,10 +82,10 @@ do
 	do
 		echo "do query $query_sql with parallel_cnt=$parallel_cnt"
 
-		start_pg_service $working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_base_time
-		do_pgbench $working_dir $database $parallel_cnt $sql_dir $query_sql $pg_bench_test_time
+		start_pg_service $server_working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_base_time
+		do_pgbench $pgbench_working_dir $database $parallel_cnt $sql_dir $query_sql $pg_bench_test_time
 		sleep 5 
-		do_mpstat $working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_running_time
+		do_mpstat $server_working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_running_time
 		sleep 20
 
 		parallel_cnt=$(( $parallel_cnt + 1 ))
