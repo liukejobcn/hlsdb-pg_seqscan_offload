@@ -101,7 +101,7 @@ password=ubuntu
 
 working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
 sql_dir=./tpch-sql
-pg_bench_test_time=30
+pg_bench_test_time=20
 mpstat_test_time=10
 parallel_cnt_max=12
 sql_index=1
