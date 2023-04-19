@@ -103,9 +103,9 @@ working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/
 sql_dir=./tpch-sql
 pg_bench_test_time=30
 mpstat_test_time=10
-parallel_cnt_max=2
+parallel_cnt_max=12
 sql_index=1
-while [ $sql_index -le 3 ]
+while [ $sql_index -le 22 ]
 do
 	echo "sql_index=$sql_index"
 	query_sql=q$sql_index.sql
