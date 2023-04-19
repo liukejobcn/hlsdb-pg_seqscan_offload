@@ -86,7 +86,20 @@ do
 		do_pgbench $pgbench_working_dir $database $parallel_cnt $sql_dir $query_sql $pg_bench_test_time
 		sleep 5 
 		do_mpstat $server_working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_running_time
+
 		sleep 20
+
+		while [ 1 ]
+		do
+			pgbench_pid=$(pidof pgbench)
+			if [ -z $pgbench_pid ] ; then
+				echo "pgbench is done ..."
+				break;
+			else
+				echo "wait pgbench done..."
+				sleep 1
+			fi
+		done
 
 		parallel_cnt=$(( $parallel_cnt + 1 ))
 	done
