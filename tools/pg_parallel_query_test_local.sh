@@ -1,109 +1,74 @@
 #!/bin/bash
-export PATH=/usr/local/postgres-11.2/bin/:$PATH
+export PATH=/usr/local/postgres/bin:$PATH
 
 function start_pg_service()
 {
-server_ip=$1
-client_ip=$2
-user_name=$3
-password=$4
+working_dir=$1
+database=$2
+parallel_cnt=$3
+sql_dir=$4
 query_sql=$5
-working_dir=$6
-parallel_cnt=$7
+test_time=$6
 
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
 echo "start_pg_with_parallel_count parallel_cnt=$parallel_cnt"
 
-/usr/bin/expect << EOF
-spawn ssh  -X $user_name@$server_ip
-expect "*password:" 
-send "$password\r"
+cd $working_dir
 
-expect "$user_name@*"
-send "cd $working_dir\r"
+sed -i "/max_worker_processes =/cmax_worker_processes = $parallel_cnt" $database/postgresql.conf
+sed -i "/max_parallel_workers_per_gather =/cmax_parallel_workers_per_gather = $max_parallel_cnt" $database/postgresql.conf
+sed -i "/max_parallel_workers =/cmax_parallel_workers = $max_parallel_cnt" $database/postgresql.conf
+sed -i "/min_parallel_table_scan_size =/cmin_parallel_table_scan_size = 8kB" $database/postgresql.conf
 
-expect "$user_name@*"
-send "source setenv.sh\r"
+pg_ctl -D $database restart
 
-expect "$user_name@*"
-send "./start_pg_with_parallel_count.sh $parallel_cnt\r"
-
-expect "ubuntu@*"
-send "mpstat 1 10 > $p_cnt-$sql_name-mpstat_base.txt\r"
-
-expect "$user_name@*"
-send "sync\r"
-
-expect "$user_name@*"
-send "exit\r"
-EOF
+mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_base.txt 
 }
 
 function do_pgbench()
 {
-server_ip=$1
-user_name=$2
-working_dir=$3
+working_dir=$1
+database=$2
+parallel_cnt=$3
 sql_dir=$4
 query_sql=$5
 test_time=$6
-parallel_cnt=$7
 
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
-echo "pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB" 
+echo "pgbench -rf $sql_dir/$query_sql -T $test_time -n $database" 
 
-nohup pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB > $p_cnt-$sql_name-parallel-pgbench.txt &
+pgbench -rf $sql_dir/$query_sql -T $test_time -n $database &
 
 }
 
 function do_mpstat()
 {
-server_ip=$1
-user_name=$2
-password=$3
-
-working_dir=$4
-sql_dir=$5
-query_sql=$6
-test_time=$7
-parallel_cnt=$8
+working_dir=$1
+database=$2
+parallel_cnt=$3
+sql_dir=$4
+query_sql=$5
+test_time=$6
 
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
-/usr/bin/expect << EOF
-spawn ssh  -X $user_name@$server_ip
-expect "*password:" 
-send "$password\r"
+mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt 
 
-expect "$user_name@*"
-send "cd $working_dir\r"
-
-expect "$user_name@*"
-send "mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt \r"
-
-expect "$user_name@*"
-send "sync\r"
-
-expect "ubuntu@*"
-send "exit\r"
-EOF
 }
 
-server_ip=192.168.1.5
-client_ip=192.168.1.10
-user_name=ubuntu
-password=ubuntu
-
 working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
+database=tpch1GB
 sql_dir=./tpch-sql
-pg_bench_test_time=30
-mpstat_test_time=10
+mpstat_base_time=5
+pg_bench_test_time=15
+mpstat_running_time=5
 parallel_cnt_max=12
+
 sql_index=1
 while [ $sql_index -le 22 ]
 do
@@ -114,15 +79,11 @@ do
 	do
 		echo "do query $query_sql with parallel_cnt=$parallel_cnt"
 
-		start_pg_service $server_ip $client_ip $user_name $password $query_sql $working_dir $parallel_cnt
-
-		do_pgbench $server_ip $user_name $working_dir $sql_dir $query_sql $pg_bench_test_time $parallel_cnt
-
+		start_pg_service $working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_base_time
+		do_pgbench $working_dir $database $parallel_cnt $sql_dir $query_sql $pg_bench_test_time
 		sleep 5 
-
-		do_mpstat $server_ip $user_name $password $working_dir $sql_dir $query_sql $mpstat_test_time $parallel_cnt
-
-		sleep 30
+		do_mpstat $working_dir $database $parallel_cnt $sql_dir $query_sql $mpstat_running_time
+		sleep 20
 
 		parallel_cnt=$(( $parallel_cnt + 1 ))
 	done
