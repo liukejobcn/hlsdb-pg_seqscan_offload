@@ -7,8 +7,12 @@ server_ip=$1
 client_ip=$2
 user_name=$3
 password=$4
-working_dir=$5
-parallel_cnt=$6
+query_sql=$5
+working_dir=$6
+parallel_cnt=$7
+
+p_cnt=$(printf "%02d" $parallel_cnt) 
+sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
 echo "start_pg_with_parallel_count parallel_cnt=$parallel_cnt"
 
@@ -25,6 +29,9 @@ send "source setenv.sh\r"
 
 expect "$user_name@*"
 send "./start_pg_with_parallel_count.sh $parallel_cnt\r"
+
+expect "ubuntu@*"
+send "mpstat 1 10 > $p_cnt-$sql_name-mpstat_base.txt\r"
 
 expect "$user_name@*"
 send "sync\r"
@@ -49,7 +56,7 @@ sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
 echo "pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB" 
 
-nohup pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB > $sql_name-$p_cnt-parallel-pgbench.txt &
+nohup pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB > $p_cnt-$sql_name-parallel-pgbench.txt &
 
 }
 
@@ -77,7 +84,7 @@ expect "$user_name@*"
 send "cd $working_dir\r"
 
 expect "$user_name@*"
-send "mpstat 1 $test_time > $sql_name-$p_cnt-mpstat_running.txt \r"
+send "mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt \r"
 
 expect "$user_name@*"
 send "sync\r"
@@ -107,7 +114,7 @@ do
 	do
 		echo "do query $query_sql with parallel_cnt=$parallel_cnt"
 
-		start_pg_service $server_ip $client_ip $user_name $password $working_dir $parallel_cnt
+		start_pg_service $server_ip $client_ip $user_name $password $query_sql $working_dir $parallel_cnt
 
 		do_pgbench $server_ip $user_name $working_dir $sql_dir $query_sql $pg_bench_test_time $parallel_cnt
 
