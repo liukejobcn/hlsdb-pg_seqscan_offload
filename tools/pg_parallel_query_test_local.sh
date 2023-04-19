@@ -1,16 +1,16 @@
 #!/bin/bash
+export PATH=/usr/local/postgres-11.2/bin/:$PATH
+
 function start_pg_service()
 {
 server_ip=$1
 client_ip=$2
 user_name=$3
 password=$4
-
 working_dir=$5
-sql_dir=$6
-query_sql=$7
-test_time=$8
-parallel_cnt=$9
+parallel_cnt=$6
+
+echo "start_pg_with_parallel_count parallel_cnt=$parallel_cnt"
 
 /usr/bin/expect << EOF
 spawn ssh  -X $user_name@$server_ip
@@ -37,37 +37,33 @@ EOF
 function do_pgbench()
 {
 server_ip=$1
-client_ip=$2
-user_name=$3
-password=$4
-
-working_dir=$5
-sql_dir=$6
-query_sql=$7
-test_time=$8
-parallel_cnt=$9
+user_name=$2
+working_dir=$3
+sql_dir=$4
+query_sql=$5
+test_time=$6
+parallel_cnt=$7
 
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
-cd $working_dir
-source setenv.sh
-nohup pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB > $sql_name-$p_cnt-parallel-pgbench.txt
+echo "pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB" 
+
+nohup pgbench --host $server_ip -U $user_name -rf $sql_dir/$query_sql -T $test_time -n tpch1GB > $sql_name-$p_cnt-parallel-pgbench.txt &
 
 }
 
 function do_mpstat()
 {
 server_ip=$1
-client_ip=$2
-user_name=$3
-password=$4
+user_name=$2
+password=$3
 
-working_dir=$5
-sql_dir=$6
-query_sql=$7
-test_time=$8
-parallel_cnt=$9
+working_dir=$4
+sql_dir=$5
+query_sql=$6
+test_time=$7
+parallel_cnt=$8
 
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
@@ -97,26 +93,27 @@ user_name=ubuntu
 password=ubuntu
 
 working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
-sql_dir=/nfs-share/tpch-sql-timingon
+sql_dir=./tpch-sql
 pg_bench_test_time=30
 mpstat_test_time=10
 parallel_cnt_max=2
 sql_index=1
-while [ $sql_index -le 22 ]
+while [ $sql_index -le 3 ]
 do
+	echo "sql_index=$sql_index"
 	query_sql=q$sql_index.sql
 	parallel_cnt=0
 	while [ $parallel_cnt -le $parallel_cnt_max ]
 	do
-		echo "do query $query_sql with parallel cnt=$parallel_cnt"
+		echo "do query $query_sql with parallel_cnt=$parallel_cnt"
 
-		start_pg_service $server_ip $client_ip $user_name $password $working_dir $sql_dir $query_sql $test_time $parallel_cnt
+		start_pg_service $server_ip $client_ip $user_name $password $working_dir $parallel_cnt
 
-		do_pgbench $server_ip $client_ip $user_name $password $working_dir $sql_dir $query_sql $pg_bench_test_time $parallel_cnt
+		do_pgbench $server_ip $user_name $working_dir $sql_dir $query_sql $pg_bench_test_time $parallel_cnt
 
 		sleep 5 
 
-		do_mpstat $server_ip $client_ip $user_name $password $working_dir $sql_dir $query_sql $mpstat_test_time $parallel_cnt
+		do_mpstat $server_ip $user_name $password $working_dir $sql_dir $query_sql $mpstat_test_time $parallel_cnt
 
 		sleep 30
 
