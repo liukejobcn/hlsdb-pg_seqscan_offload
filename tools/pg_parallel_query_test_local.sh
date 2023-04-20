@@ -24,7 +24,7 @@ sed -i "/min_parallel_table_scan_size =/cmin_parallel_table_scan_size = 8kB" $da
 
 pg_ctl -D $database restart
 
-mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_base.txt 
+mpstat -P ON 1 $test_time > $p_cnt-$sql_name-mpstat_base.txt 
 }
 
 function do_pgbench()
@@ -59,7 +59,7 @@ cd $working_dir
 p_cnt=$(printf "%02d" $parallel_cnt) 
 sql_name=$(echo "$query_sql" | awk -F . '{print $1}')
 
-mpstat 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt 
+mpstat -P ON 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt 
 
 }
 
