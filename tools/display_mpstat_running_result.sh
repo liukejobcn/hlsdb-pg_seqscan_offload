@@ -22,7 +22,7 @@ do
 		p_cnt=$(printf "%02d" $parallel_cnt)
 		sql_name=$query_sql
 		log=$p_cnt-$sql_name-mpstat_running.txt
-		cpu_idle=$(cat $log | grep Average | awk '{print $12}')
+		cpu_idle=$(cat $log | grep Average | grep all | awk '{print $12}')
 		cpu_load=$( printf "%.2f" $(echo "100 - $cpu_idle" | bc) )
 
 		printf "%10s" $(printf "%7.2f|" $cpu_load)
