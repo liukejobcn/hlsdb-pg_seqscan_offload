@@ -1,5 +1,5 @@
 #!/bin/bash
-sql_index=1
+sql_dir=$1
 parallel_cnt_max=12
 
 printf "%10s|" "paraellel"
@@ -11,10 +11,11 @@ do
 	parallel_cnt=$(( $parallel_cnt + 1 ))
 done
 echo ""
+sqls=$(ls $sql_dir | grep .sql$)
 
-while [ $sql_index -le 22 ]
+for sql in $sqls
 do
-        query_sql=q$sql_index
+        query_sql=echo $sql | awk -F . '{print $1}'
         parallel_cnt=1
 	printf "%10s|" $query_sql
         while [ $parallel_cnt -le $parallel_cnt_max ]
