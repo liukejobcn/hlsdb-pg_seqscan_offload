@@ -66,7 +66,7 @@ mpstat -P ON 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt
 server_working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
 pgbench_working_dir=$(pwd)
 database=tpch1GB
-sql_dir=./condition
+sql_dir=$1
 mpstat_base_time=5
 pg_bench_test_time=15
 mpstat_running_time=5
