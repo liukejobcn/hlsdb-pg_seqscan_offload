@@ -1,6 +1,6 @@
 #!/bin/bash
 sql_dir=$1
-parallel_cnt_max=12
+parallel_cnt_max=$2
 
 printf "%10s|" "paraellel"
 
