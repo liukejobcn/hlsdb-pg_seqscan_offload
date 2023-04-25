@@ -63,14 +63,14 @@ mpstat -P ON 1 $test_time > $p_cnt-$sql_name-mpstat_running.txt
 
 }
 
+sql_dir=$1
+parallel_cnt_max=$2
 server_working_dir=/home/ubuntu/work/project/inspur-project/inspur_project_bin/tpch/db/postgresql-11.2-o2
 pgbench_working_dir=$(pwd)
 database=tpch1GB
-sql_dir=./tpch-sql
 mpstat_base_time=5
 pg_bench_test_time=15
 mpstat_running_time=5
-parallel_cnt_max=12
 
 sql_index=1
 while [ $sql_index -le 22 ]

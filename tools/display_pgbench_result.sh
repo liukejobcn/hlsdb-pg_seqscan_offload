@@ -15,7 +15,7 @@ sqls=$(ls $sql_dir | grep .sql$)
 
 for sql in $sqls
 do
-        query_sql=echo $sql | awk -F . '{print $1}'
+	query_sql=$(echo $sql | awk -F . '{print $1}')
         parallel_cnt=1
 	printf "%10s|" $query_sql
         while [ $parallel_cnt -le $parallel_cnt_max ]
