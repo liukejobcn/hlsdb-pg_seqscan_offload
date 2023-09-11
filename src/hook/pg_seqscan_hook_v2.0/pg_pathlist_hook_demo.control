@@ -1,0 +1,5 @@
+# pageinspect extension
+comment = 'pg_pathlist_hook_demo'
+default_version = '1.0'
+module_pathname = '$libdir/pg_pathlist_hook_demo'
+relocatable = true

@@ -463,20 +463,20 @@ void filter_tuple(page_buf_t * buf, int blk_dat_offset, int page_id, int natts,
 					}else{
 						int_stack_top -= 1;
 						unsigned short index = int_stack_top;
-						arg0 = float8_stack[index];
+						arg0 = int_stack[index];
 					}
 
 					if(T_Var == arg1_tag){
 						unsigned short arg_off = *(att_pos_array + i*MAX_COL + arg1_index);
 						arg_off += tupoff;
-						arg_off = arg_off >> 3;
+						arg_off = arg_off >> 2;
 						arg1 = int_ptr[arg_off];
 					}else if(T_Const == arg1_tag){
 						arg1 = filter->const_int[arg1_index];
 					}else{
 						int_stack_top -= 1;
 						unsigned short index = int_stack_top;
-						arg1 = float8_stack[index];
+						arg1 = int_stack[index];
 					}
 
 					u16 func_id = op->func_id;
