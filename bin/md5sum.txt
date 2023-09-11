@@ -1,1 +1,0 @@
-b2f1292427abaf983cc548c67561e592  pg_seqscan3.5.2-bin-relaese.tar.gz
