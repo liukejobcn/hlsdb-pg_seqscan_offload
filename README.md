@@ -1,77 +1,78 @@
-# 简介
+# Introduction
 
-- 本文介绍开发环境搭建方法
-
-
-
-# 说明
-
-## 目录说明
-
-1. bin：二进制安装包
-2. src：源代码
-3. doc：使用文档
-4. test：测试数据及测试报告
-5. tools：常用脚本工具
-6. debug：调试记录
-
-## 硬件要求
-
-- FPGA板卡：浪潮F37X板卡（Xilnux U280板卡需要自行配置）
-- 内存：大于32GB
-- 磁盘：大于200GB
-- CPU：核心数大于12个
+- This document introduces the method of setting up development environment
 
 
 
-## 软件要求
+# Description
 
-- 操作系统：Ubuntu18.04 x64
-- 内核：Linux ubuntu 5.0.0-23-generic
+## Directory description
+
+1. bin：Binary installation package
+2. src：Source code
+3. doc：Document
+4. test：Test data and test report
+5. tools：Common scripting tools
+6. debug：Debug log
+
+## Hardware requirement
+
+- FPGA：Inspur F73X Card(Alveo U280)
+- DDR：more than 32GB
+- Disk：more than 200GB
+- CPU：more than 12 cores
 
 
 
-# 环境搭建
+## Software requirement
 
-## 安装Vitis2020.2
+- OS：Ubuntu18.04 x64
+  - Kernel：Linux ubuntu 5.0.0-23-generic
+- Vitis: Vitis 2020.2
 
-1. 参考Xilinx 官方文档安装Vitis2020.2开发环境
+
+
+# Environment setup
+
+## Install Vitis2020.2
+
+1. Refer to the Xilinx official documentation to install the Vitis2020.2 development environment
 
 
 
-## 安装Postgresql
+## Install Postgresql
 
-1. 安装依赖库
+1. Install dependent library
 
    ```shell
    sudo apt-get install libreadline6-dev zlib1g-dev -y
    ```
 
-2. 下载源码
+2. Download source code
 
    ```asm
    https://ftp.postgresql.org/pub/source/v11.2/postgresql-11.2.tar.gz
    ```
 
-3. 解压
+3. Unzip 
 
    ```shell
    tar xvzf postgresql-11.2.tar.gz
    ```
 
-4. 配置
+4. Configure
 
    ```shell
    ./configure --prefix=/usr/local/postgres
    ```
 
-5. 编译
+5. Compile
 
    ```shell
    make
    ```
 
-6. 安装
+6. Install
 
    ```shell
    sudo make install
@@ -79,17 +80,17 @@
 
    
 
-## 创建测试数据集
+## Create a test dataset
 
-### 创建TPC-H数据
+### Create TPC-H Raw data
 
-1. 下载dbgen源码
+1. Download `dbgen` source code
 
    ```asm
    https://www.tpc.org/tpch/
    ```
 
-2. 添加如下patch
+2. Add the following patch(Using gcc as compiler)
 
    ```asm
    diff --git a/makefile.suite b/makefile.suite
@@ -118,19 +119,19 @@
     LDFLAGS = -O
    ```
 
-3. 编译生成dbgen工具
+3. Compile to create the `dbgen` tool
 
    ```shell
    make -f makefile.suite
    ```
 
-4. 生成tpc-h测试数据
+4. create TPC-H raw data
 
    ```shell
    ./dbgen -s 1 -f
    ```
 
-5. 将数据转换为csv格式
+5. Convert data to csv format by the following shell scirpt
 
    ```shell
    for i in `ls *.tbl`; do sed 's/|$//' $i > ${i/tbl/csv}; echo $i; done;
@@ -138,37 +139,37 @@
 
    
 
-### 导入数据到Postgresql
+### Import data to Postgresql
 
-1. 调用tools目录下脚本，自动创建测试用数据库
+1. Using the script in the tools directory to automatically create a test database
 
    ```shel
-   ./create_tpch_demo_db.sh csv文件路径/ tpch1GB tpch.sql
+   ./create_tpch_demo_db.sh <your csv dir path>/ tpch1GB tpch.sql
    ```
 
 
 
-### 测试TPC-H Q6查询
+### Test the TPC-H Q6 query
 
-1. 导出环境变量
+1. Export environment variable
 
    ```shell
    export PATH=/usr/local/postgres/bin
    ```
 
-2. 启动数据库
+2. Start the Database
 
    ```shell
    pg_ctl -D tpch1GB restart
    ```
 
-3. 链接数据库
+3. Connect to Database
 
    ```shell
    psql -d tpch1GB
    ```
 
-4. 启动Q6查询
+4. Start Q6 query
 
    ```shell
    \timing on
@@ -188,27 +189,27 @@
 
 
 
-# CPU+FPGA测试步骤
+# CPU+FPGA test procedure
 
-1. 进入bin目录，解压安装包
+1. Go to the bin directory and decompress the installation package
 
    ```shell
-   tar xvzf pg_seqscan3.5.3-bin-relaese.tar.gz
+   tar xvzf pg_seqscan3.5.4-bin-relaese.tar.gz
    ```
 
-2. 拷贝pg_pathlist_hook_demo.so到PostgreSQL v11.2安装目录
+2. Copy pg_pathlist_hook_demo.so to the PostgreSQL v11.2 installation directory
 
    ```shell
    sudo cp pg_pathlist_hook_demo.so /usr/local/postgres/lib
    ```
 
-3. 修改数据库配置文件使能插件
+3. Modify the database configuration file to enable the hook
 
    ```shell
    sed -i "/#shared_preload_libraries =/cshared_preload_libraries = pg_pathlist_hook_demo.so" tpch1GB/postgresql.conf
    ```
 
-4. 导出Xilinx XRT环境变量（**按照自己的安装目录设置**）
+4. Export Xilinx XRT environment variables (**Set in your own installation directory !**)
 
    ```shell
    source /opt/Xilinx-2020.2/Vitis/2020.2/settings64.sh
@@ -216,25 +217,25 @@
    export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
    ```
 
-5. 启动中间件服务进程
+5. Start the middleware service process
 
    ```shell
    ./pg_filter_host -k pg_filter_kernel.xclbin -w 4 &
    ```
 
-6. 重启数据库
+6. Restart the database
 
    ```shell
    pg_ctl -D tpch1GB restart
    ```
 
-7. 连接数据库
+7. Connect database
 
    ```shell
    psql -d tpch1GB
    ```
 
-8. 启动Q6查询
+8. Start Q6 query
 
    ```shell
    \timing on
