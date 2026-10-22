@@ -1,253 +1,101 @@
-# Introduction
+# hlsdb-pg_seqscan_offload
 
-- This document introduces the method of setting up development environment
+FPGA offloading of tuple parsing and predicate filtering for PostgreSQL sequential scans.
 
+This repository contains the research code and experimental artifacts accompanying:
 
+> Ke Liu, Haonan Tong, Zhongxiang Sun, Zhixin Ren, Guangkui Huang, Hongyin Zhu,
+> Luyang Liu, Qunyang Lin, and Chuang Zhang.
+> **Integrating FPGA-based hardware acceleration with relational databases.**
+> *Parallel Computing* 119 (2024), 103064.
+> [https://doi.org/10.1016/j.parco.2024.103064](https://doi.org/10.1016/j.parco.2024.103064)
 
-# Description
+Ke Liu and Haonan Tong contributed equally to the paper.
 
-## Directory description
+## Status and provenance
 
-1. bin：Binary installation package
-2. src：Source code
-3. doc：Document
-4. test：Test data and test report
-5. tools：Common scripting tools
-6. debug：Debug log
+This project is primarily preserved as a **paper code archive**. The GitHub documentation
+refresh describes the original artifact; it does not represent a new FPGA test run or a
+claim of compatibility with current PostgreSQL, Linux, Vitis, or FPGA platforms.
+Performance results in the paper and `test/` belong to the original experiments.
 
-## Hardware requirement
+- **GitHub:** [liukejob/hlsdb-pg_seqscan_offload](https://github.com/liukejob/hlsdb-pg_seqscan_offload)
+- **Original Gitee repository:** [liukejob/hlsdb-pg_seqscan_offload](https://gitee.com/liukejob/hlsdb-pg_seqscan_offload)
+- **Imported source baseline:** `2f06980860144398887c3658f06cf68f64870257` (2023-12-18), with 44 original commits.
+- **Branches:** `master` preserves that original source snapshot; `main` adds the GitHub-facing documentation and citation metadata.
 
-- FPGA：Inspur F73X Card(Alveo U280)
-- DDR：more than 32GB
-- Disk：more than 200GB
-- CPU：more than 12 cores
+The Gitee repository remains in place because the published paper links to it. The
+GitHub copy retains the original Git history and existing license notices.
 
+## What the system does
 
+The implementation connects three components:
 
-## Software requirement
+1. A **PostgreSQL hook module** extracts tuple-layout and predicate information and
+   installs a custom scan path.
+2. A **host middleware process** schedules transfers and FPGA work through Xilinx XRT/OpenCL.
+3. **FPGA kernels** parse PostgreSQL tuples and filter rows using a pipelined design.
 
-- OS：Ubuntu18.04 x64
-  - Kernel：Linux ubuntu 5.0.0-23-generic
-- Vitis: Vitis 2020.2
+The paper describes an end-to-end system that retains native SQL and the PostgreSQL
+storage format. The artifact focuses on sequential-scan offloading; the presence of
+TPC-H query files does not mean every query or PostgreSQL operator is accelerated.
 
+## Repository map
 
+| Path | Contents |
+| --- | --- |
+| [`src/hook/pg_seqscan_hook_v2.0/`](src/hook/pg_seqscan_hook_v2.0/) | PostgreSQL hook and custom scan implementation |
+| [`src/middleware-and-kernel/pg_seqscan_v3.5.4/`](src/middleware-and-kernel/pg_seqscan_v3.5.4/) | Host middleware, FPGA source, Makefiles, and platform configuration |
+| [`bin/`](bin/) | Original v3.5.4 binary archive, including a platform-specific `.xclbin` |
+| [`tools/`](tools/) | Dataset preparation, SQL files, benchmark launchers, and result parsers |
+| [`test/`](test/) | Original spreadsheets and archived experiment logs |
+| [`doc/`](doc/) | Original setup documents and reproduction notes |
 
-# Environment setup
+The historical directory spelling `test/pereformance-En/` is retained to preserve
+existing paths. Its subdirectories associate archived measurements with paper figures.
 
-## Install Vitis2020.2
+## Reading and reproducing the artifact
 
-1. Refer to the Xilinx official documentation to install the Vitis2020.2 development environment
+Start with [reproduction notes and known documentation discrepancies](doc/reproducibility.md).
+They explain historical platform assumptions, the actual binary archive name,
+and the data-changing behavior of the dataset setup script.
 
+The original instructions are retained for reference:
 
+- [Original English setup guide, preserved unchanged](doc/legacy-setup-en.md)
+- [Original Chinese setup guide](doc/README-CN.md)
+- [Original environment and installation notes](doc/01-%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E4%B8%8E%E5%AE%89%E8%A3%85.md)
 
-## Install Postgresql
+The documented historical software baseline is PostgreSQL **11.2**, Ubuntu **18.04 x64**,
+Linux **5.0.0-23-generic**, and Vitis **2020.2**, with an installed XRT runtime.
+The source defaults to the `inspur_f37x_xdma_201920_3` platform and an eight-compute-unit
+HBM configuration. A different board or platform requires its own configuration;
+the archived bitstream is not a generic image for arbitrary FPGA cards.
 
-1. Install dependent library
+No compilation, database execution, FPGA loading, or performance reproduction was
+performed as part of this documentation refresh. Source inspection and archive
+inventory checks are described separately from runtime validation in the reproduction notes.
 
-   ```shell
-   sudo apt-get install libreadline6-dev zlib1g-dev -y
-   ```
+## Citation
 
-2. Download source code
+If this artifact supports your research, cite the paper above. Machine-readable
+citation metadata is provided in [`CITATION.cff`](CITATION.cff).
 
-   ```asm
-   https://ftp.postgresql.org/pub/source/v11.2/postgresql-11.2.tar.gz
-   ```
+```bibtex
+@article{liu2024integrating,
+  title   = {Integrating FPGA-based hardware acceleration with relational databases},
+  author  = {Liu, Ke and Tong, Haonan and Sun, Zhongxiang and Ren, Zhixin and Huang, Guangkui and Zhu, Hongyin and Liu, Luyang and Lin, Qunyang and Zhang, Chuang},
+  journal = {Parallel Computing},
+  volume  = {119},
+  pages   = {103064},
+  year    = {2024},
+  doi     = {10.1016/j.parco.2024.103064}
+}
+```
 
-3. Unzip 
+## License
 
-   ```shell
-   tar xvzf postgresql-11.2.tar.gz
-   ```
-
-4. Configure
-
-   ```shell
-   ./configure --prefix=/usr/local/postgres
-   ```
-
-5. Compile
-
-   ```shell
-   make
-   ```
-
-6. Install
-
-   ```shell
-   sudo make install
-   ```
-
-   
-
-## Create a test dataset
-
-### Create TPC-H Raw data
-
-1. Download `dbgen` source code
-
-   ```asm
-   https://www.tpc.org/tpch/
-   ```
-
-2. Add the following patch(Using gcc as compiler)
-
-   ```asm
-   diff --git a/makefile.suite b/makefile.suite
-   index 45548a4..6014505 100755
-   --- a/makefile.suite
-   +++ b/makefile.suite
-   @@ -100,15 +100,15 @@
-    ################
-    ## CHANGE NAME OF ANSI COMPILER HERE
-    ################
-   -CC      = 
-   +CC      = gcc
-    # Current values for DATABASE are: INFORMIX, DB2, TDAT (Teradata)
-    #                                  SQLSERVER, SYBASE, ORACLE, VECTORWISE
-    # Current values for MACHINE are:  ATT, DOS, HP, IBM, ICL, MVS, 
-    #                                  SGI, SUN, U2200, VMS, LINUX, WIN32 
-    # Current values for WORKLOAD are:  TPCH
-   -DATABASE= 
-   -MACHINE = 
-   -WORKLOAD = 
-   +DATABASE= SQLSERVER
-   +MACHINE = LINUX
-   +WORKLOAD = TPCH
-    #
-    CFLAGS = -g -DDBNAME=\"dss\" -D$(MACHINE) -D$(DATABASE) -D$(WORKLOAD) -DRNG_TEST -D_FILE_OFFSET_BITS=64 
-    LDFLAGS = -O
-   ```
-
-3. Compile to create the `dbgen` tool
-
-   ```shell
-   make -f makefile.suite
-   ```
-
-4. create TPC-H raw data
-
-   ```shell
-   ./dbgen -s 1 -f
-   ```
-
-5. Convert data to csv format by the following shell scirpt
-
-   ```shell
-   for i in `ls *.tbl`; do sed 's/|$//' $i > ${i/tbl/csv}; echo $i; done;
-   ```
-
-   
-
-### Import data to Postgresql
-
-1. Using the script in the tools directory to automatically create a test database
-
-   ```shel
-   ./create_tpch_demo_db.sh <your csv dir path>/ tpch1GB tpch.sql
-   ```
-
-
-
-### Test the TPC-H Q6 query
-
-1. Export environment variable
-
-   ```shell
-   export PATH=/usr/local/postgres/bin
-   ```
-
-2. Start the Database
-
-   ```shell
-   pg_ctl -D tpch1GB restart
-   ```
-
-3. Connect to Database
-
-   ```shell
-   psql -d tpch1GB
-   ```
-
-4. Start Q6 query
-
-   ```shell
-   \timing on
-   select
-     sum(l_extendedprice * l_discount) as revenue
-   from
-     lineitem
-   where
-     l_shipdate >= date '1994-01-01'
-           and l_shipdate < date '1994-01-01' + interval '1' year
-     and l_discount between 0.06 - 0.01 and 0.06 + 0.01
-     and l_quantity < 24
-   limit 1;
-   ```
-   
-   
-
-
-
-# CPU+FPGA test procedure
-
-1. Go to the bin directory and decompress the installation package
-
-   ```shell
-   tar xvzf pg_seqscan3.5.4-bin-relaese.tar.gz
-   ```
-
-2. Copy pg_pathlist_hook_demo.so to the PostgreSQL v11.2 installation directory
-
-   ```shell
-   sudo cp pg_pathlist_hook_demo.so /usr/local/postgres/lib
-   ```
-
-3. Modify the database configuration file to enable the hook
-
-   ```shell
-   sed -i "/#shared_preload_libraries =/cshared_preload_libraries = pg_pathlist_hook_demo.so" tpch1GB/postgresql.conf
-   ```
-
-4. Export Xilinx XRT environment variables (**Set in your own installation directory !**)
-
-   ```shell
-   source /opt/Xilinx-2020.2/Vitis/2020.2/settings64.sh
-   source /opt/xilinx/xrt/setup.sh
-   export LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
-   ```
-
-5. Start the middleware service process
-
-   ```shell
-   ./pg_filter_host -k pg_filter_kernel.xclbin -w 4 &
-   ```
-
-6. Restart the database
-
-   ```shell
-   pg_ctl -D tpch1GB restart
-   ```
-
-7. Connect database
-
-   ```shell
-   psql -d tpch1GB
-   ```
-
-8. Start Q6 query
-
-   ```shell
-   \timing on
-   select
-     sum(l_extendedprice * l_discount) as revenue
-   from
-     lineitem
-   where
-     l_shipdate >= date '1994-01-01'
-           and l_shipdate < date '1994-01-01' + interval '1' year
-     and l_discount between 0.06 - 0.01 and 0.06 + 0.01
-     and l_quantity < 24
-   limit 1;
-   ```
-
+The repository carries the GNU Affero General Public License, version 3, in
+[`LICENSE`](LICENSE). Existing third-party copyright and license notices remain in
+place; for example, the Xilinx `xcl2` helper source includes Apache-2.0 notices.
+The GitHub migration does not relicense the code or those third-party components.

@@ -1,0 +1,36 @@
+cff-version: 1.2.0
+message: "If you use this research artifact, please cite the paper in preferred-citation."
+type: software
+title: "hlsdb-pg_seqscan_offload: FPGA offloading for PostgreSQL sequential scans"
+authors:
+  - family-names: Liu
+    given-names: Ke
+repository-code: "https://github.com/liukejob/hlsdb-pg_seqscan_offload"
+url: "https://gitee.com/liukejob/hlsdb-pg_seqscan_offload"
+preferred-citation:
+  type: article
+  title: "Integrating FPGA-based hardware acceleration with relational databases"
+  authors:
+    - family-names: Liu
+      given-names: Ke
+    - family-names: Tong
+      given-names: Haonan
+    - family-names: Sun
+      given-names: Zhongxiang
+    - family-names: Ren
+      given-names: Zhixin
+    - family-names: Huang
+      given-names: Guangkui
+    - family-names: Zhu
+      given-names: Hongyin
+    - family-names: Liu
+      given-names: Luyang
+    - family-names: Lin
+      given-names: Qunyang
+    - family-names: Zhang
+      given-names: Chuang
+  journal: "Parallel Computing"
+  volume: "119"
+  year: 2024
+  doi: "10.1016/j.parco.2024.103064"
+  url: "https://doi.org/10.1016/j.parco.2024.103064"
