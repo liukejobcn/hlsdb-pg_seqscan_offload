@@ -5,7 +5,7 @@ title: "hlsdb-pg_seqscan_offload: FPGA offloading for PostgreSQL sequential scan
 authors:
   - family-names: Liu
     given-names: Ke
-repository-code: "https://github.com/liukejob/hlsdb-pg_seqscan_offload"
+repository-code: "https://github.com/liukejobcn/hlsdb-pg_seqscan_offload"
 url: "https://gitee.com/liukejob/hlsdb-pg_seqscan_offload"
 preferred-citation:
   type: article

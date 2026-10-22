@@ -19,7 +19,7 @@ refresh describes the original artifact; it does not represent a new FPGA test r
 claim of compatibility with current PostgreSQL, Linux, Vitis, or FPGA platforms.
 Performance results in the paper and `test/` belong to the original experiments.
 
-- **GitHub:** [liukejob/hlsdb-pg_seqscan_offload](https://github.com/liukejob/hlsdb-pg_seqscan_offload)
+- **GitHub:** [liukejobcn/hlsdb-pg_seqscan_offload](https://github.com/liukejobcn/hlsdb-pg_seqscan_offload)
 - **Original Gitee repository:** [liukejob/hlsdb-pg_seqscan_offload](https://gitee.com/liukejob/hlsdb-pg_seqscan_offload)
 - **Imported source baseline:** `2f06980860144398887c3658f06cf68f64870257` (2023-12-18), with 44 original commits.
 - **Branches:** `master` preserves that original source snapshot; `main` adds the GitHub-facing documentation and citation metadata.
